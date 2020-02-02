@@ -32,9 +32,13 @@ protected:
 
 	void FadeObject();
 	void StopShrinking();
+	void stopGrowing();
 
 	FTimerHandle fallTimer;
 	FTimerHandle fadeTimer;
+	FTimerHandle regrowTimer;
+	FVector originalScale;
+	bool canRegrow = false;
 	bool isSpawned;
 	bool canShrink = false;
 

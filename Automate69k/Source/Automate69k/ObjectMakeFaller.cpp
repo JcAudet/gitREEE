@@ -39,6 +39,7 @@ void UObjectMakeFaller::FadeObject() {
 	if (canFall && world) {
 		world->GetTimerManager().ClearTimer(fallTimer);
 		canShrink = true;
+		originalScale = GetOwner()->GetActorTransform().GetScale3D();
 		world->GetTimerManager().SetTimer(fadeTimer, this, &UObjectMakeFaller::StopShrinking, timeBeforeNotThereAnymore, 0.0f);
 	}
 	else {
@@ -48,8 +49,14 @@ void UObjectMakeFaller::FadeObject() {
 
 void UObjectMakeFaller::StopShrinking() {
 	canShrink = false;
+	canRegrow = true;
 	GetWorld()->GetTimerManager().ClearTimer(fadeTimer);
-	GetOwner()->Destroy();
+	GetWorld()->GetTimerManager().SetTimer(regrowTimer, this, &UObjectMakeFaller::stopGrowing, 6.0f, 0.0f);
+}
+
+void UObjectMakeFaller::stopGrowing() {
+	canRegrow = false;
+	GetWorld()->GetTimerManager().ClearTimer(regrowTimer);
 }
 
 // Called when the game starts
@@ -66,14 +73,21 @@ void UObjectMakeFaller::BeginPlay()
 void UObjectMakeFaller::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	AActor* owner = GetOwner();
+	FVector actorScale = FVector::OneVector;
 	if (canShrink) {
-		AActor* owner = GetOwner();
-		FVector actorScale = (owner->GetActorScale()) * shrinkRate;
+		actorScale = (owner->GetActorScale()) * shrinkRate;
 		if (actorScale.X < 1.0f) {
 			StopShrinking();
 		}
-		GetOwner()->SetActorScale3D(actorScale);
+		
+	} else if(canRegrow) {
+		actorScale = (owner->GetActorScale()) * -shrinkRate/5;
+		if (actorScale.X >= originalScale.X) {
+			stopGrowing();
+		}
 	}
+	GetOwner()->SetActorScale3D(actorScale);
 	// ...
 }
 
